@@ -4,7 +4,7 @@
 
 Show user profile by username
 
-- [ ] User data
+- [x] User data
 - Format joined date to presentation?
   - I think this job should be done in the frontend
 
