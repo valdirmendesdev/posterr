@@ -2,10 +2,9 @@
 
 ## Users
 
-Show user profile
+Show user profile by username
 
-- [ ] User profile data
-  - [ ] Username
+- [ ] User data
 - Format joined date to presentation?
   - I think this job should be done in the frontend
 
