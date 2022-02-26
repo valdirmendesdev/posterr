@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/valdirmendesdev/posterr/pkg/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
-	"github.com/valdirmendesdev/posterr/pkg/users/domain/users"
 )
 
 func TestNewUser(t *testing.T) {
