@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/valdirmendesdev/posterr/pkg/domain/users"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 )
 

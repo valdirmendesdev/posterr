@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/valdirmendesdev/posterr/pkg/domain/users"
-	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/users"
-	"github.com/valdirmendesdev/posterr/pkg/services/profiles"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
+	"github.com/valdirmendesdev/posterr/pkg/application/services/profiles"
+	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 )
 

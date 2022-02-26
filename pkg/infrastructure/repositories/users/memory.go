@@ -1,7 +1,7 @@
 package users
 
 import (
-	"github.com/valdirmendesdev/posterr/pkg/domain/users"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 )
 

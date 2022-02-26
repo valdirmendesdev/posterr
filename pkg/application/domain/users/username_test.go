@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/valdirmendesdev/posterr/pkg/domain/users"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 )
 
 func Test_ValidUsername(t *testing.T) {

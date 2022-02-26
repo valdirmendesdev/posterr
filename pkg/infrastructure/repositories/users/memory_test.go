@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	users_domain "github.com/valdirmendesdev/posterr/pkg/domain/users"
-	"github.com/valdirmendesdev/posterr/pkg/infrastructure/users"
+	users_domain "github.com/valdirmendesdev/posterr/pkg/application/domain/users"
+	"github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 )
 
