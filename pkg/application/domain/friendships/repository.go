@@ -1,6 +1,14 @@
 package friendships
 
-import "github.com/valdirmendesdev/posterr/pkg/shared/types"
+import (
+	"errors"
+
+	"github.com/valdirmendesdev/posterr/pkg/shared/types"
+)
+
+var (
+	ErrNotFound = errors.New("friendship not found")
+)
 
 type Repository interface {
 	Insert(f *Friendship) error
