@@ -12,16 +12,20 @@ import (
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/handlers"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
+	friendships_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/friendships"
 	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	shared_presenters "github.com/valdirmendesdev/posterr/pkg/shared/infrastructure/http/presenters"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
+	"github.com/valdirmendesdev/posterr/pkg/shared/utils"
 )
 
-var memoryRepository *users_infra.MemoryRepository
+var userRepo *users_infra.MemoryRepository
+var friendshipRepo *friendships_infra.MemoryRepository
 
 func setupRoutes() *handlers.ProfileRoutesConfig {
-	memoryRepository = users_infra.NewMemoryRepository()
-	config := handlers.NewProfileRoutesConfigs(fiber.New(), memoryRepository)
+	userRepo = users_infra.NewMemoryRepository()
+	friendshipRepo = friendships_infra.NewMemoryRepository()
+	config := handlers.NewProfileRoutesConfigs(fiber.New(), userRepo, friendshipRepo)
 	handlers.MountProfilesRoutes(config)
 	return config
 }
@@ -39,7 +43,7 @@ func TestGetProfileRoute(t *testing.T) {
 		time.Now(),
 	)
 	assert.NoError(t, err)
-	memoryRepository.Add(user)
+	userRepo.Add(user)
 
 	expected := &presenters.Profile{
 		ID:       user.ID,
@@ -91,4 +95,25 @@ func TestGetProfileRoute_profile_not_found(t *testing.T) {
 	err = json.NewDecoder(response.Body).Decode(&result)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expected, result)
+}
+
+func createFollowUserRequest(username string) *http.Request {
+	return httptest.NewRequest(http.MethodPut, "/profiles/"+username+"/follow", nil)
+}
+
+func TestFollowUserRoute(t *testing.T) {
+	rc := setupRoutes()
+	user, err := users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
+	assert.NoError(t, err)
+	err = userRepo.Add(user)
+	assert.NoError(t, err)
+
+	lu := utils.GetLoggedUser()
+	err = userRepo.Add(lu)
+	assert.NoError(t, err)
+
+	request := createFollowUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, response.StatusCode)
 }
