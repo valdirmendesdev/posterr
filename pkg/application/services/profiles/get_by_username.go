@@ -18,7 +18,7 @@ func NewGetByUsernameService(userRepo users.Repository) *getByUsernameService {
 }
 
 type GetByUsernameRequest struct {
-	Username users.Username
+	Username string
 }
 
 type GetByUsernameResponse struct {
@@ -28,7 +28,12 @@ type GetByUsernameResponse struct {
 }
 
 func (s *getByUsernameService) Perform(request GetByUsernameRequest) (*GetByUsernameResponse, error) {
-	u, err := s.userRepo.GetByUsername(request.Username)
+	username := users.Username(request.Username)
+	if err := username.Validate(); err != nil {
+		return nil, err
+	}
+
+	u, err := s.userRepo.GetByUsername(username)
 
 	if err != nil {
 		return nil, err

@@ -29,7 +29,7 @@ func TestGetByUsername(t *testing.T) {
 	s := profiles.NewGetByUsernameService(ur)
 
 	p, err := s.Perform(profiles.GetByUsernameRequest{
-		Username: users.Username("username"),
+		Username: "username",
 	})
 
 	assert.NotNil(t, p)
@@ -41,8 +41,19 @@ func TestGetByUsername_user_not_found(t *testing.T) {
 	s := profiles.NewGetByUsernameService(ur)
 
 	_, err := s.Perform(profiles.GetByUsernameRequest{
-		Username: users.Username("notfound"),
+		Username: "notfound",
 	})
 
 	assert.ErrorIs(t, err, users.ErrNotFound)
+}
+
+func TestGetByUsername_invalid_username(t *testing.T) {
+	ur := users_infra.NewMemoryRepository()
+	s := profiles.NewGetByUsernameService(ur)
+
+	_, err := s.Perform(profiles.GetByUsernameRequest{
+		Username: "user#$%invalid",
+	})
+
+	assert.ErrorIs(t, err, users.ErrInvalidUsername)
 }
