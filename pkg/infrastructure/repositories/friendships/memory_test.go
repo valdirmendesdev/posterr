@@ -44,6 +44,16 @@ func TestCreateNewFriendship(t *testing.T) {
 	assert.Equal(t, f, f2)
 }
 
+func TestFriendshipAlreadyExists(t *testing.T) {
+	r := setupTest(t)
+	f := createFriendship(t, user, follower)
+	err := r.Insert(f)
+	assert.NoError(t, err)
+
+	err = r.Insert(f)
+	assert.ErrorIs(t, friendships_domain.ErrAlreadyExists, err)
+}
+
 func TestDeleteFriendship(t *testing.T) {
 	r := setupTest(t)
 	f := createFriendship(t, user, follower)

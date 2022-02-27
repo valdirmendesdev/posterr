@@ -1,6 +1,8 @@
 package profiles
 
 import (
+	"errors"
+
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/friendships"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 )
@@ -17,6 +19,11 @@ func NewFollowUserService(userRepo users.Repository, friendshipRepo friendships.
 	}
 }
 
+var (
+	ErrUserNotExist     = errors.New("user not exist")
+	ErrFollowerNotExist = errors.New("follower not exist")
+)
+
 type FollowUserRequest struct {
 	UserUsername     string
 	FollowerUsername string
@@ -25,12 +32,22 @@ type FollowUserRequest struct {
 func (s *FollowUserService) Perform(request FollowUserRequest) error {
 	user, err := s.userRepo.GetByUsername(users.Username(request.UserUsername))
 	if err != nil {
-		return err
+		switch err {
+		case users.ErrNotFound:
+			return ErrUserNotExist
+		default:
+			return err
+		}
 	}
 
 	follower, err := s.userRepo.GetByUsername(users.Username(request.FollowerUsername))
 	if err != nil {
-		return err
+		switch err {
+		case users.ErrNotFound:
+			return ErrFollowerNotExist
+		default:
+			return err
+		}
 	}
 
 	f, err := friendships.NewFriendship(user, follower)

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("friendship not found")
+	ErrNotFound      = errors.New("friendship not found")
+	ErrAlreadyExists = errors.New("friendship already exists")
 )
 
 type Repository interface {

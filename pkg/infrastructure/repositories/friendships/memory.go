@@ -16,7 +16,19 @@ func NewMemoryRepository() *MemoryRepository {
 }
 
 func (r *MemoryRepository) Insert(f *friendships.Friendship) error {
-	r.friendships = append(r.friendships, f)
+	ff, err := r.Get(f.User.ID, f.Follower.ID)
+	if err != nil {
+
+		switch err {
+		case friendships.ErrNotFound:
+			r.friendships = append(r.friendships, f)
+		default:
+			return err
+		}
+	}
+	if ff != nil {
+		return friendships.ErrAlreadyExists
+	}
 	return nil
 }
 
