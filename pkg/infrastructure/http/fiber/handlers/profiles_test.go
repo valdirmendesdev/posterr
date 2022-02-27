@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/friendships"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/handlers"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
@@ -113,6 +114,32 @@ func TestFollowUserRoute(t *testing.T) {
 	assert.NoError(t, err)
 
 	request := createFollowUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, response.StatusCode)
+}
+
+func createUnfollowUserRequest(username string) *http.Request {
+	return httptest.NewRequest(http.MethodDelete, "/profiles/"+username+"/unfollow", nil)
+}
+
+func TestUnFollowUserRoute(t *testing.T) {
+	rc := setupRoutes()
+	user, err := users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
+	assert.NoError(t, err)
+	err = userRepo.Add(user)
+	assert.NoError(t, err)
+
+	lu := utils.GetLoggedUser()
+	err = userRepo.Add(lu)
+	assert.NoError(t, err)
+
+	friendship, err := friendships.NewFriendship(user, lu)
+	assert.NoError(t, err)
+	err = friendshipRepo.Insert(friendship)
+	assert.NoError(t, err)
+
+	request := createUnfollowUserRequest("anyuser")
 	response, err := rc.App.Test(request)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNoContent, response.StatusCode)

@@ -83,8 +83,31 @@ func followUser(cfg *ProfileRoutesConfig) fiber.Handler {
 	})
 }
 
+func unfollowUser(cfg *ProfileRoutesConfig) fiber.Handler {
+	return fiber.Handler(func(c *fiber.Ctx) error {
+		username := c.Params(usernameParamName)
+		s := profiles.NewUnfollowUserService(cfg.UserRepo, cfg.FriendshipRepo)
+
+		lu := utils.GetLoggedUser()
+
+		request := profiles.UnfollowUserRequest{
+			UserUsername:     username,
+			FollowerUsername: lu.Username.String(),
+		}
+		err := s.Perform(request)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
+				Message: err.Error(),
+			})
+		}
+
+		return c.SendStatus(http.StatusNoContent)
+	})
+}
+
 func MountProfilesRoutes(cfg *ProfileRoutesConfig) {
 	g := cfg.App.Group("/profiles")
 	g.Get("/:username", getProfile(cfg))
 	g.Put("/:username/follow", followUser(cfg))
+	g.Delete("/:username/unfollow", unfollowUser(cfg))
 }
