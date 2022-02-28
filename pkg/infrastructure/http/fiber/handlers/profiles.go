@@ -33,12 +33,12 @@ func NewProfileRoutesConfigs(app *fiber.App, userRepo users.Repository, friendsh
 func getProfile(cfg *ProfileRoutesConfig) fiber.Handler {
 	return fiber.Handler(func(c *fiber.Ctx) error {
 		username := c.Params(usernameParamName)
-		s := profiles.NewGetByUsernameService(cfg.UserRepo)
+		s := profiles.NewGetByUsernameService(cfg.UserRepo, cfg.FriendshipRepo)
 
 		request := profiles.GetByUsernameRequest{
 			Username: username,
 		}
-		user, err := s.Perform(request)
+		profile, err := s.Perform(request)
 		if err != nil {
 			var errorStatusCode int
 			switch err {
@@ -54,9 +54,11 @@ func getProfile(cfg *ProfileRoutesConfig) fiber.Handler {
 		}
 
 		return c.JSON(presenters.Profile{
-			ID:       user.ID,
-			Username: user.Username.String(),
-			JoinedAt: user.JoinedAt,
+			ID:        profile.ID,
+			Username:  profile.Username.String(),
+			JoinedAt:  profile.JoinedAt,
+			Followers: profile.Followers,
+			Following: profile.Following,
 		})
 	})
 }
