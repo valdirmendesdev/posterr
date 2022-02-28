@@ -1,10 +1,20 @@
 package posts
 
 import (
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
+)
+
+const ContentMaxLength = 777
+
+var (
+	ErrInvalidUser      = errors.New("invalid user")
+	ErrInvalidCreatedAt = errors.New("created at not specified")
+	ErrOverMaxLength    = errors.New("over max length " + strconv.Itoa(ContentMaxLength))
 )
 
 type Post struct {
@@ -29,5 +39,16 @@ func NewPost(id types.UUID, user *users.User, content string, createdAt time.Tim
 }
 
 func (p *Post) Validate() error {
+	if p.User == nil {
+		return ErrInvalidUser
+	}
+
+	if len(p.Content) > ContentMaxLength {
+		return ErrOverMaxLength
+	}
+
+	if p.CreatedAt.IsZero() {
+		return ErrInvalidCreatedAt
+	}
 	return nil
 }

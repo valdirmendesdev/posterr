@@ -27,3 +27,33 @@ func TestNewPost(t *testing.T) {
 	assert.Equal(t, "content", p.Content)
 	assert.Equal(t, now, p.CreatedAt)
 }
+
+func TestNewPost_invalid_user(t *testing.T) {
+	p, err := posts.NewPost(types.NewUUID(), nil, "content", time.Now())
+	assert.Nil(t, p)
+	assert.Equal(t, posts.ErrInvalidUser, err)
+}
+
+func TestNewPost_invalid_created_at(t *testing.T) {
+	u := createUser(t)
+	var date time.Time
+	p, err := posts.NewPost(types.NewUUID(), u, "content", date)
+	assert.Nil(t, p)
+	assert.Equal(t, posts.ErrInvalidCreatedAt, err)
+}
+
+func generateString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = 'a'
+	}
+	return string(b)
+}
+
+func TestNewPost_content_over_limit(t *testing.T) {
+	u := createUser(t)
+	content := generateString(posts.ContentMaxLength + 1)
+	p, err := posts.NewPost(types.NewUUID(), u, content, time.Now())
+	assert.Nil(t, p)
+	assert.Equal(t, posts.ErrOverMaxLength, err)
+}
