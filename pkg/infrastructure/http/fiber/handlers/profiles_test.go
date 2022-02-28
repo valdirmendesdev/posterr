@@ -22,6 +22,8 @@ import (
 
 var userRepo *users_infra.MemoryRepository
 var friendshipRepo *friendships_infra.MemoryRepository
+var user *users.User
+var loggedUser *users.User
 
 func setupRoutes() *handlers.ProfileRoutesConfig {
 	userRepo = users_infra.NewMemoryRepository()
@@ -31,20 +33,41 @@ func setupRoutes() *handlers.ProfileRoutesConfig {
 	return config
 }
 
+func createUser(t *testing.T) {
+	var err error
+	user, err = users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
+	assert.NoError(t, err)
+	err = userRepo.Add(user)
+	assert.NoError(t, err)
+}
+
+func createLoggedUser(t *testing.T) {
+	loggedUser = utils.GetLoggedUser()
+	err := userRepo.Add(loggedUser)
+	assert.NoError(t, err)
+}
+
+func createFriendship(t *testing.T, user, follower *users.User) *friendships.Friendship {
+	f, err := friendships.NewFriendship(user, follower)
+	assert.NoError(t, err)
+	err = friendshipRepo.Insert(f)
+	assert.NoError(t, err)
+	return f
+}
+
+func decodeError(t *testing.T, response *http.Response) (error *shared_presenters.Error) {
+	err := json.NewDecoder(response.Body).Decode(&error)
+	assert.NoError(t, err)
+	return
+}
+
 func createGetProfileRequest(username string) *http.Request {
 	return httptest.NewRequest(http.MethodGet, "/profiles/"+username, nil)
 }
 
 func TestGetProfileRoute_without_friendships(t *testing.T) {
 	routesConfig := setupRoutes()
-
-	user, err := users.NewUser(
-		types.NewUUID(),
-		users.Username("myusername"),
-		time.Now(),
-	)
-	assert.NoError(t, err)
-	userRepo.Add(user)
+	createUser(t)
 
 	expected := &presenters.Profile{
 		ID:        user.ID,
@@ -54,7 +77,7 @@ func TestGetProfileRoute_without_friendships(t *testing.T) {
 		Following: 0,
 	}
 
-	request := createGetProfileRequest("myusername")
+	request := createGetProfileRequest("anyuser")
 	response, err := routesConfig.App.Test(request)
 	var result *presenters.Profile
 	assert.NoError(t, err)
@@ -70,30 +93,14 @@ func TestGetProfileRoute_without_friendships(t *testing.T) {
 
 func TestGetProfileRoute_with_friendships(t *testing.T) {
 	routesConfig := setupRoutes()
-
-	user, err := users.NewUser(
-		types.NewUUID(),
-		users.Username("myusername"),
-		time.Now(),
-	)
-	assert.NoError(t, err)
-	err = userRepo.Add(user)
-	assert.NoError(t, err)
-	lu := utils.GetLoggedUser()
-	err = userRepo.Add(lu)
-	assert.NoError(t, err)
+	createUser(t)
+	createLoggedUser(t)
 
 	//Logged user follows myusername
-	f, err := friendships.NewFriendship(user, lu)
-	assert.NoError(t, err)
-	err = friendshipRepo.Insert(f)
-	assert.NoError(t, err)
+	createFriendship(t, user, loggedUser)
 
 	//myusername follows Logged User
-	f, err = friendships.NewFriendship(lu, user)
-	assert.NoError(t, err)
-	err = friendshipRepo.Insert(f)
-	assert.NoError(t, err)
+	createFriendship(t, loggedUser, user)
 
 	expected := &presenters.Profile{
 		ID:        user.ID,
@@ -103,7 +110,7 @@ func TestGetProfileRoute_with_friendships(t *testing.T) {
 		Following: 1,
 	}
 
-	request := createGetProfileRequest("myusername")
+	request := createGetProfileRequest("anyuser")
 	response, err := routesConfig.App.Test(request)
 	var result *presenters.Profile
 	assert.NoError(t, err)
@@ -128,9 +135,7 @@ func TestGetProfileRoute_invalid_username(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
-	var result *shared_presenters.Error
-	err = json.NewDecoder(response.Body).Decode(&result)
-	assert.NoError(t, err)
+	result := decodeError(t, response)
 	assert.EqualValues(t, expected, result)
 }
 
@@ -145,9 +150,7 @@ func TestGetProfileRoute_profile_not_found(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, response.StatusCode)
-	var result *shared_presenters.Error
-	err = json.NewDecoder(response.Body).Decode(&result)
-	assert.NoError(t, err)
+	result := decodeError(t, response)
 	assert.EqualValues(t, expected, result)
 }
 
@@ -157,19 +160,36 @@ func createFollowUserRequest(username string) *http.Request {
 
 func TestFollowUserRoute(t *testing.T) {
 	rc := setupRoutes()
-	user, err := users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
-	assert.NoError(t, err)
-	err = userRepo.Add(user)
-	assert.NoError(t, err)
-
-	lu := utils.GetLoggedUser()
-	err = userRepo.Add(lu)
-	assert.NoError(t, err)
+	createUser(t)
+	createLoggedUser(t)
 
 	request := createFollowUserRequest("anyuser")
 	response, err := rc.App.Test(request)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNoContent, response.StatusCode)
+}
+
+func TestFollowUserRoute_friendship_already_exist(t *testing.T) {
+	rc := setupRoutes()
+	createUser(t)
+	createLoggedUser(t)
+	createFriendship(t, user, loggedUser)
+
+	request := createFollowUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotModified, response.StatusCode)
+}
+
+func TestFollowUserRoute_bad_request(t *testing.T) {
+	rc := setupRoutes()
+
+	request := createFollowUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	result := decodeError(t, response)
+	assert.NotNil(t, result)
 }
 
 func createUnfollowUserRequest(username string) *http.Request {
@@ -178,22 +198,23 @@ func createUnfollowUserRequest(username string) *http.Request {
 
 func TestUnFollowUserRoute(t *testing.T) {
 	rc := setupRoutes()
-	user, err := users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
-	assert.NoError(t, err)
-	err = userRepo.Add(user)
-	assert.NoError(t, err)
-
-	lu := utils.GetLoggedUser()
-	err = userRepo.Add(lu)
-	assert.NoError(t, err)
-
-	friendship, err := friendships.NewFriendship(user, lu)
-	assert.NoError(t, err)
-	err = friendshipRepo.Insert(friendship)
-	assert.NoError(t, err)
+	createUser(t)
+	createLoggedUser(t)
+	createFriendship(t, user, loggedUser)
 
 	request := createUnfollowUserRequest("anyuser")
 	response, err := rc.App.Test(request)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNoContent, response.StatusCode)
+}
+
+func TestUnFollowUserRoute_bad_request(t *testing.T) {
+	rc := setupRoutes()
+
+	request := createUnfollowUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	result := decodeError(t, response)
+	assert.NotNil(t, result)
 }

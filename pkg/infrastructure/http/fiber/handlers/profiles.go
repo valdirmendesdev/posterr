@@ -76,9 +76,15 @@ func followUser(cfg *ProfileRoutesConfig) fiber.Handler {
 		}
 		err := s.Perform(request)
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
-				Message: err.Error(),
-			})
+			switch err {
+			case friendships.ErrAlreadyExists:
+				return c.SendStatus(http.StatusNotModified)
+
+			default:
+				return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
+					Message: err.Error(),
+				})
+			}
 		}
 
 		return c.SendStatus(http.StatusNoContent)
