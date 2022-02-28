@@ -35,7 +35,7 @@ func createGetProfileRequest(username string) *http.Request {
 	return httptest.NewRequest(http.MethodGet, "/profiles/"+username, nil)
 }
 
-func TestGetProfileRoute(t *testing.T) {
+func TestGetProfileRoute_without_friendships(t *testing.T) {
 	routesConfig := setupRoutes()
 
 	user, err := users.NewUser(
@@ -47,9 +47,11 @@ func TestGetProfileRoute(t *testing.T) {
 	userRepo.Add(user)
 
 	expected := &presenters.Profile{
-		ID:       user.ID,
-		Username: user.Username.String(),
-		JoinedAt: user.JoinedAt,
+		ID:        user.ID,
+		Username:  user.Username.String(),
+		JoinedAt:  user.JoinedAt,
+		Followers: 0,
+		Following: 0,
 	}
 
 	request := createGetProfileRequest("myusername")
@@ -62,6 +64,57 @@ func TestGetProfileRoute(t *testing.T) {
 	assert.Equal(t, expected.ID, result.ID)
 	assert.Equal(t, expected.Username, result.Username)
 	assert.Equal(t, expected.JoinedAt.UTC().GoString(), result.JoinedAt.UTC().GoString())
+	assert.Equal(t, expected.Followers, result.Followers)
+	assert.Equal(t, expected.Following, result.Following)
+}
+
+func TestGetProfileRoute_with_friendships(t *testing.T) {
+	routesConfig := setupRoutes()
+
+	user, err := users.NewUser(
+		types.NewUUID(),
+		users.Username("myusername"),
+		time.Now(),
+	)
+	assert.NoError(t, err)
+	err = userRepo.Add(user)
+	assert.NoError(t, err)
+	lu := utils.GetLoggedUser()
+	err = userRepo.Add(lu)
+	assert.NoError(t, err)
+
+	//Logged user follows myusername
+	f, err := friendships.NewFriendship(user, lu)
+	assert.NoError(t, err)
+	err = friendshipRepo.Insert(f)
+	assert.NoError(t, err)
+
+	//myusername follows Logged User
+	f, err = friendships.NewFriendship(lu, user)
+	assert.NoError(t, err)
+	err = friendshipRepo.Insert(f)
+	assert.NoError(t, err)
+
+	expected := &presenters.Profile{
+		ID:        user.ID,
+		Username:  user.Username.String(),
+		JoinedAt:  user.JoinedAt,
+		Followers: 1,
+		Following: 1,
+	}
+
+	request := createGetProfileRequest("myusername")
+	response, err := routesConfig.App.Test(request)
+	var result *presenters.Profile
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	err = json.NewDecoder(response.Body).Decode(&result)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.ID, result.ID)
+	assert.Equal(t, expected.Username, result.Username)
+	assert.Equal(t, expected.JoinedAt.UTC().GoString(), result.JoinedAt.UTC().GoString())
+	assert.Equal(t, expected.Followers, result.Followers)
+	assert.Equal(t, expected.Following, result.Following)
 }
 
 func TestGetProfileRoute_invalid_username(t *testing.T) {
