@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/posts"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
+	posts_service "github.com/valdirmendesdev/posterr/pkg/application/services/posts"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/handlers"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
 	posts_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/posts"
@@ -36,8 +37,7 @@ func createGetPostsRequest() *http.Request {
 }
 
 func createPost(t *testing.T) *posts.Post {
-	u, err := users.NewUser(types.NewUUID(), users.Username("anyuser"), time.Now())
-	assert.NoError(t, err)
+	u := utils.GetLoggedUser()
 	post, err := posts.NewPost(types.NewUUID(), u, "my post", time.Now())
 	assert.NoError(t, err)
 	err = postsRepo.Insert(post)
@@ -86,4 +86,18 @@ func TestCreateNewPost(t *testing.T) {
 	response, err := rc.App.Test(request)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, response.StatusCode)
+}
+
+func TestCreatePostOverTheDayLimit(t *testing.T) {
+	rc := setupPostsRoutes()
+	lu := utils.GetLoggedUser()
+	for i := 0; i < posts_service.PostsLimitByDay; i++ {
+		createPost(t)
+	}
+	request := createNewPostRequest(t, lu, "content")
+	response, err := rc.App.Test(request)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	responseError := decodeError(t, response)
+	assert.Equal(t, posts_service.ErrDailyPostsLimitReached.Error(), responseError.Message)
 }
