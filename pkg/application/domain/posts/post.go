@@ -12,9 +12,9 @@ import (
 const ContentMaxLength = 777
 
 var (
-	ErrInvalidUser      = errors.New("invalid user")
-	ErrInvalidCreatedAt = errors.New("created at not specified")
-	ErrOverMaxLength    = errors.New("over max length " + strconv.Itoa(ContentMaxLength))
+	ErrInvalidUser          = errors.New("invalid user")
+	ErrInvalidCreatedAt     = errors.New("created at not specified")
+	ErrContentOverMaxLength = errors.New("over max length " + strconv.Itoa(ContentMaxLength) + " characters")
 )
 
 type Post struct {
@@ -44,7 +44,7 @@ func (p *Post) Validate() error {
 	}
 
 	if len(p.Content) > ContentMaxLength {
-		return ErrOverMaxLength
+		return ErrContentOverMaxLength
 	}
 
 	if p.CreatedAt.IsZero() {

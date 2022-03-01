@@ -88,6 +88,25 @@ func TestCreateNewPost(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, response.StatusCode)
 }
 
+func generateString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = 'a'
+	}
+	return string(b)
+}
+
+func TestCreateNewPost_content_over_max_size(t *testing.T) {
+	rc := setupPostsRoutes()
+	lu := utils.GetLoggedUser()
+	request := createNewPostRequest(t, lu, generateString(posts.ContentMaxLength+1))
+	response, err := rc.App.Test(request)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	responseError := decodeError(t, response)
+	assert.Equal(t, posts.ErrContentOverMaxLength.Error(), responseError.Message)
+}
+
 func TestCreatePostOverTheDayLimit(t *testing.T) {
 	rc := setupPostsRoutes()
 	lu := utils.GetLoggedUser()

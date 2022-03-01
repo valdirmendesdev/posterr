@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	posts_infra "github.com/valdirmendesdev/posterr/pkg/application/domain/posts"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/valdirmendesdev/posterr/pkg/application/services/posts"
 )
@@ -24,6 +26,28 @@ func TestCreateNewPost(t *testing.T) {
 	assert.Equal(t, u.Username.String(), response.Username)
 	assert.Equal(t, "content", response.Content)
 	assert.NotNil(t, response.CreatedAt)
+}
+
+func generateString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = 'a'
+	}
+	return string(b)
+}
+
+func TestCreateNewPost_content_over_max_size(t *testing.T) {
+	setupPostsTest(t)
+	u := createUser(t)
+
+	s := posts.NewCreateNewPostService(postRepo)
+	response, err := s.Perform(posts.CreateNewPostRequest{
+		User:    u,
+		Content: generateString(posts_infra.ContentMaxLength + 1),
+	})
+
+	assert.Nil(t, response)
+	assert.ErrorIs(t, err, posts_infra.ErrContentOverMaxLength)
 }
 
 func TestCreatePostOverTheDayLimit(t *testing.T) {

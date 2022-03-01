@@ -69,14 +69,9 @@ func createPost(cfg *PostsRoutesConfig) fiber.Handler {
 			Content: postBody.Content,
 		})
 		if err != nil {
-			switch err {
-			case posts.ErrDailyPostsLimitReached:
-				return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
-					Message: err.Error(),
-				})
-			default:
-				return c.SendStatus(http.StatusInternalServerError)
-			}
+			return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
+				Message: err.Error(),
+			})
 		}
 
 		return c.Status(http.StatusCreated).JSON(presenters.Post{

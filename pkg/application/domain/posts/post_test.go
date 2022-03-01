@@ -55,5 +55,5 @@ func TestNewPost_content_over_limit(t *testing.T) {
 	content := generateString(posts.ContentMaxLength + 1)
 	p, err := posts.NewPost(types.NewUUID(), u, content, time.Now())
 	assert.Nil(t, p)
-	assert.Equal(t, posts.ErrOverMaxLength, err)
+	assert.Equal(t, posts.ErrContentOverMaxLength, err)
 }
