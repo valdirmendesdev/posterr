@@ -65,16 +65,27 @@ func createGetProfileRequest(username string) *http.Request {
 	return httptest.NewRequest(http.MethodGet, "/profiles/"+username, nil)
 }
 
+func checkProfile(t *testing.T, expected, actual *presenters.Profile) {
+	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.Username, actual.Username)
+	assert.Equal(t, expected.JoinedAt.UTC().GoString(), actual.JoinedAt.UTC().GoString())
+	assert.Equal(t, expected.Followers, actual.Followers)
+	assert.Equal(t, expected.Following, actual.Following)
+	assert.Equal(t, expected.IsFollowing, actual.IsFollowing)
+}
+
 func TestGetProfileRoute_without_friendships(t *testing.T) {
 	routesConfig := setupRoutes()
 	createUser(t)
+	createLoggedUser(t)
 
 	expected := &presenters.Profile{
-		ID:        user.ID,
-		Username:  user.Username.String(),
-		JoinedAt:  user.JoinedAt,
-		Followers: 0,
-		Following: 0,
+		ID:          user.ID,
+		Username:    user.Username.String(),
+		JoinedAt:    user.JoinedAt,
+		Followers:   0,
+		Following:   0,
+		IsFollowing: false,
 	}
 
 	request := createGetProfileRequest("anyuser")
@@ -84,11 +95,7 @@ func TestGetProfileRoute_without_friendships(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	err = json.NewDecoder(response.Body).Decode(&result)
 	assert.NoError(t, err)
-	assert.Equal(t, expected.ID, result.ID)
-	assert.Equal(t, expected.Username, result.Username)
-	assert.Equal(t, expected.JoinedAt.UTC().GoString(), result.JoinedAt.UTC().GoString())
-	assert.Equal(t, expected.Followers, result.Followers)
-	assert.Equal(t, expected.Following, result.Following)
+	checkProfile(t, expected, result)
 }
 
 func TestGetProfileRoute_with_friendships(t *testing.T) {
@@ -103,11 +110,12 @@ func TestGetProfileRoute_with_friendships(t *testing.T) {
 	createFriendship(t, loggedUser, user)
 
 	expected := &presenters.Profile{
-		ID:        user.ID,
-		Username:  user.Username.String(),
-		JoinedAt:  user.JoinedAt,
-		Followers: 1,
-		Following: 1,
+		ID:          user.ID,
+		Username:    user.Username.String(),
+		JoinedAt:    user.JoinedAt,
+		Followers:   1,
+		Following:   1,
+		IsFollowing: true,
 	}
 
 	request := createGetProfileRequest("anyuser")
@@ -117,11 +125,7 @@ func TestGetProfileRoute_with_friendships(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	err = json.NewDecoder(response.Body).Decode(&result)
 	assert.NoError(t, err)
-	assert.Equal(t, expected.ID, result.ID)
-	assert.Equal(t, expected.Username, result.Username)
-	assert.Equal(t, expected.JoinedAt.UTC().GoString(), result.JoinedAt.UTC().GoString())
-	assert.Equal(t, expected.Followers, result.Followers)
-	assert.Equal(t, expected.Following, result.Following)
+	checkProfile(t, expected, result)
 }
 
 func TestGetProfileRoute_invalid_username(t *testing.T) {

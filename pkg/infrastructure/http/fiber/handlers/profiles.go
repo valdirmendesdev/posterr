@@ -53,12 +53,26 @@ func getProfile(cfg *ProfileRoutesConfig) fiber.Handler {
 			})
 		}
 
+		cfs := profiles.NewCheckFriendshipService(cfg.UserRepo, cfg.FriendshipRepo)
+		lu := utils.GetLoggedUser()
+
+		friendship, _ := cfs.Perform(profiles.CheckFriendshipRequest{
+			Username:         username,
+			FollowerUsername: lu.Username.String(),
+		})
+
+		isFollowing := false
+		if friendship.Friendship != nil {
+			isFollowing = true
+		}
+
 		return c.JSON(presenters.Profile{
-			ID:        profile.ID,
-			Username:  profile.Username.String(),
-			JoinedAt:  profile.JoinedAt,
-			Followers: profile.Followers,
-			Following: profile.Following,
+			ID:          profile.ID,
+			Username:    profile.Username.String(),
+			JoinedAt:    profile.JoinedAt,
+			Followers:   profile.Followers,
+			Following:   profile.Following,
+			IsFollowing: isFollowing,
 		})
 	})
 }
