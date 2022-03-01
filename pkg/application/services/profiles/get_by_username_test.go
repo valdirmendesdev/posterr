@@ -27,10 +27,22 @@ func createUser(t *testing.T) *users.User {
 	return u
 }
 
-func setupTest() *profiles.GetByUsernameService {
+func setupRepos() {
 	userRepo = users_infra.NewMemoryRepository()
 	friendshipRepo = friendships_infra.NewMemoryRepository()
+}
+
+func setupTest() *profiles.GetByUsernameService {
+	setupRepos()
 	return profiles.NewGetByUsernameService(userRepo, friendshipRepo)
+}
+
+func checkProfile(t *testing.T, u *users.User, p *profiles.GetByUsernameResponse, followersNumber, followingNumber int) {
+	assert.Equal(t, u.ID, p.ID)
+	assert.Equal(t, u.Username, p.Username)
+	assert.Equal(t, u.JoinedAt, p.JoinedAt)
+	assert.Equal(t, followersNumber, p.Followers)
+	assert.Equal(t, followingNumber, p.Following)
 }
 
 func TestGetByUsername(t *testing.T) {
@@ -44,9 +56,7 @@ func TestGetByUsername(t *testing.T) {
 
 	assert.NotNil(t, p)
 	assert.NoError(t, err)
-	assert.Equal(t, u.ID, p.ID)
-	assert.Equal(t, u.Username, p.Username)
-	assert.Equal(t, u.JoinedAt, p.JoinedAt)
+	checkProfile(t, u, p, 0, 0)
 }
 
 func TestGetByUsername_user_not_found(t *testing.T) {
@@ -80,11 +90,7 @@ func TestGetByUsername_without_friendships(t *testing.T) {
 
 	assert.NotNil(t, p)
 	assert.NoError(t, err)
-	assert.Equal(t, u.ID, p.ID)
-	assert.Equal(t, u.Username, p.Username)
-	assert.Equal(t, u.JoinedAt, p.JoinedAt)
-	assert.Equal(t, 0, p.Followers)
-	assert.Equal(t, 0, p.Following)
+	checkProfile(t, u, p, 0, 0)
 }
 
 func TestGetByUsername_with_friendships(t *testing.T) {
@@ -111,9 +117,5 @@ func TestGetByUsername_with_friendships(t *testing.T) {
 
 	assert.NotNil(t, p)
 	assert.NoError(t, err)
-	assert.Equal(t, u.ID, p.ID)
-	assert.Equal(t, u.Username, p.Username)
-	assert.Equal(t, u.JoinedAt, p.JoinedAt)
-	assert.Equal(t, 1, p.Followers)
-	assert.Equal(t, 1, p.Following)
+	checkProfile(t, u, p, 1, 1)
 }
