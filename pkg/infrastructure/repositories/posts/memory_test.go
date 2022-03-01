@@ -56,7 +56,7 @@ func TestGetPostsByUsername(t *testing.T) {
 	assert.Equal(t, 1, len(posts))
 }
 
-func TestGetPostsByDate(t *testing.T) {
+func TestGetPostsByUsernameAndDate(t *testing.T) {
 	createdAt := time.Now()
 	r := posts_infra.NewMemoryRepository()
 	u := createUser(t, "myuser")
@@ -72,7 +72,7 @@ func TestGetPostsByDate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(posts))
 
-	posts, err = r.ListByDate(createdAt)
+	posts, err = r.FindByUsernameAndDate("myuser", createdAt)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(posts))
 }

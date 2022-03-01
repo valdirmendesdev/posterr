@@ -1,6 +1,7 @@
 package posts_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestCreateNewPost(t *testing.T) {
-	setupTest(t)
+	setupPostsTest(t)
 	u := createUser(t)
 
 	s := posts.NewCreateNewPostService(postRepo)
@@ -23,4 +24,24 @@ func TestCreateNewPost(t *testing.T) {
 	assert.Equal(t, u.Username.String(), response.Username)
 	assert.Equal(t, "content", response.Content)
 	assert.NotNil(t, response.CreatedAt)
+}
+
+func TestCreatePostOverTheDayLimit(t *testing.T) {
+	setupPostsTest(t)
+	u := createUser(t)
+	s := posts.NewCreateNewPostService(postRepo)
+
+	for i := 0; i < posts.PostsLimitByDay; i++ {
+		_, err := s.Perform(posts.CreateNewPostRequest{
+			User:    u,
+			Content: fmt.Sprintf("content %d", i),
+		})
+		assert.NoError(t, err)
+	}
+	response, err := s.Perform(posts.CreateNewPostRequest{
+		User:    u,
+		Content: "content",
+	})
+	assert.Nil(t, response)
+	assert.ErrorIs(t, err, posts.ErrDailyPostsLimitReached)
 }

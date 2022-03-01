@@ -28,12 +28,12 @@ func createPost(t *testing.T, user *users.User) *posts_domain.Post {
 	return p
 }
 
-func setupTest(t *testing.T) {
+func setupPostsTest(t *testing.T) {
 	postRepo = posts_infra.NewMemoryRepository()
 }
 
 func TestGetAllPosts(t *testing.T) {
-	setupTest(t)
+	setupPostsTest(t)
 	u := createUser(t)
 	postRepo.Insert(createPost(t, u))
 	s := posts.NewGetAllPostsService(postRepo)

@@ -42,9 +42,13 @@ func (r *MemoryRepository) ListByUsername(username string) ([]*posts.Post, error
 	return posts, nil
 }
 
-func (r *MemoryRepository) ListByDate(date time.Time) ([]*posts.Post, error) {
+func (r *MemoryRepository) FindByUsernameAndDate(username string, date time.Time) ([]*posts.Post, error) {
+	un := users.Username(username)
 	posts := make([]*posts.Post, 0, len(r.posts))
 	for _, post := range r.posts {
+		if post.User.Username != un {
+			continue
+		}
 		if post.CreatedAt.Day() == date.Day() &&
 			post.CreatedAt.Month() == date.Month() &&
 			post.CreatedAt.Year() == date.Year() {
