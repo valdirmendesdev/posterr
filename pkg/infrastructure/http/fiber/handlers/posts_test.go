@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +17,7 @@ import (
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
 	posts_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/posts"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
+	"github.com/valdirmendesdev/posterr/pkg/shared/utils"
 )
 
 var (
@@ -43,7 +45,7 @@ func createPost(t *testing.T) *posts.Post {
 	return post
 }
 
-func decodeResponse(t *testing.T, response *http.Response) *[]presenters.Post {
+func decodeAllPostsResponse(t *testing.T, response *http.Response) *[]presenters.Post {
 	posts := []presenters.Post{}
 	err := json.NewDecoder(response.Body).Decode(&posts)
 	assert.NoError(t, err)
@@ -57,10 +59,31 @@ func TestGetAllPosts(t *testing.T) {
 	response, err := rc.App.Test(request)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
-	posts := decodeResponse(t, response)
+	posts := decodeAllPostsResponse(t, response)
 	assert.Equal(t, 1, len(*posts))
 	assert.Equal(t, p.ID, (*posts)[0].ID)
 	assert.Equal(t, p.User.Username.String(), (*posts)[0].Username)
 	assert.Equal(t, p.Content, (*posts)[0].Content)
 	assert.Equal(t, p.CreatedAt.UTC(), (*posts)[0].CreatedAt.UTC())
+}
+
+func createNewPostRequest(t *testing.T, user *users.User, content string) *http.Request {
+
+	bodyBytes, err := json.Marshal(presenters.CreatePost{
+		Content: content,
+	})
+	require.NoError(t, err)
+
+	request := httptest.NewRequest(http.MethodPost, "/posts/", bytes.NewReader(bodyBytes))
+	request.Header.Add("Content-Type", "application/json")
+	return request
+}
+
+func TestCreateNewPost(t *testing.T) {
+	rc := setupPostsRoutes()
+	lu := utils.GetLoggedUser()
+	request := createNewPostRequest(t, lu, "content")
+	response, err := rc.App.Test(request)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, response.StatusCode)
 }
