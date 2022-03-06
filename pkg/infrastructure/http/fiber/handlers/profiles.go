@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -161,8 +162,8 @@ func getPostsByUser(cfg *ProfileRoutesConfig) fiber.Handler {
 
 func MountProfilesRoutes(cfg *ProfileRoutesConfig) {
 	g := cfg.App.Group("/profiles")
-	g.Get("/:username", getProfile(cfg))
-	g.Put("/:username/follow", followUser(cfg))
-	g.Delete("/:username/unfollow", unfollowUser(cfg))
-	g.Get("/:username/posts", getPostsByUser(cfg))
+	g.Get(fmt.Sprintf("/:%s", usernameParamName), getProfile(cfg))
+	g.Put(fmt.Sprintf("/:%s/follow", usernameParamName), followUser(cfg))
+	g.Delete(fmt.Sprintf("/:%s/unfollow", usernameParamName), unfollowUser(cfg))
+	g.Get(fmt.Sprintf("/:%s/posts", usernameParamName), getPostsByUser(cfg))
 }

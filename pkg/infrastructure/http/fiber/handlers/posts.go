@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +17,10 @@ type PostsRoutesConfig struct {
 	PostsRepo posts_domain.Repository
 }
 
+const (
+	postIDParam = "postID"
+)
+
 func NewPostsRoutesConfig(app *fiber.App, postsRepo posts_domain.Repository) *PostsRoutesConfig {
 	return &PostsRoutesConfig{
 		App:       app,
@@ -27,6 +32,7 @@ func MountPostsRoutes(cfg *PostsRoutesConfig) {
 	g := cfg.App.Group("/posts")
 	g.Get("/", getPosts(cfg))
 	g.Post("/", createPost(cfg))
+	g.Get(fmt.Sprintf("/:%s", postIDParam), getPostID(cfg))
 }
 
 func getPosts(cfg *PostsRoutesConfig) fiber.Handler {
@@ -79,6 +85,26 @@ func createPost(cfg *PostsRoutesConfig) fiber.Handler {
 			Username:  lu.Username.String(),
 			Content:   serviceResponse.Content,
 			CreatedAt: serviceResponse.CreatedAt,
+		})
+	})
+}
+
+func getPostID(cfg *PostsRoutesConfig) fiber.Handler {
+	return fiber.Handler(func(c *fiber.Ctx) error {
+		s := posts.NewGetByIDService(cfg.PostsRepo)
+
+		serviceResponse, err := s.Perform(posts.GetByIDRequest{
+			ID: c.Params(postIDParam),
+		})
+		if err != nil {
+			return c.SendStatus(http.StatusBadRequest)
+		}
+
+		return c.JSON(presenters.Post{
+			ID:        serviceResponse.Post.ID,
+			Username:  serviceResponse.Post.User.Username.String(),
+			Content:   serviceResponse.Post.Content,
+			CreatedAt: serviceResponse.Post.CreatedAt,
 		})
 	})
 }

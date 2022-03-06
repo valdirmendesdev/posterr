@@ -120,3 +120,17 @@ func TestCreatePostOverTheDayLimit(t *testing.T) {
 	responseError := decodeError(t, response)
 	assert.Equal(t, posts_service.ErrDailyPostsLimitReached.Error(), responseError.Message)
 }
+
+func createGetPostByIDRequest(id string) *http.Request {
+	return httptest.NewRequest(http.MethodGet, "/posts/"+id, nil)
+}
+
+func TestGetPostByID(t *testing.T) {
+	rc := setupPostsRoutes()
+	p := createPost(t)
+
+	request := createGetPostByIDRequest(p.ID.String())
+	response, err := rc.App.Test(request)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+}
