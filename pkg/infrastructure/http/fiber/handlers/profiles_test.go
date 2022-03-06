@@ -14,6 +14,7 @@ import (
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/handlers"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
 	friendships_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/friendships"
+	posts_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/posts"
 	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	shared_presenters "github.com/valdirmendesdev/posterr/pkg/shared/infrastructure/http/presenters"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
@@ -22,13 +23,15 @@ import (
 
 var userRepo *users_infra.MemoryRepository
 var friendshipRepo *friendships_infra.MemoryRepository
+
 var user *users.User
 var loggedUser *users.User
 
 func setupRoutes() *handlers.ProfileRoutesConfig {
 	userRepo = users_infra.NewMemoryRepository()
 	friendshipRepo = friendships_infra.NewMemoryRepository()
-	config := handlers.NewProfileRoutesConfigs(fiber.New(), userRepo, friendshipRepo)
+	postsRepo = posts_infra.NewMemoryRepository()
+	config := handlers.NewProfileRoutesConfigs(fiber.New(), userRepo, friendshipRepo, postsRepo)
 	handlers.MountProfilesRoutes(config)
 	return config
 }
@@ -221,4 +224,18 @@ func TestUnFollowUserRoute_bad_request(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
 	result := decodeError(t, response)
 	assert.NotNil(t, result)
+}
+
+func createGetPostsByUserRequest(username string) *http.Request {
+	return httptest.NewRequest(http.MethodGet, "/profiles/"+username+"/posts", nil)
+}
+
+func TestGetPostsByUser(t *testing.T) {
+	rc := setupRoutes()
+	createUser(t)
+
+	request := createGetPostsByUserRequest("anyuser")
+	response, err := rc.App.Test(request)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 }

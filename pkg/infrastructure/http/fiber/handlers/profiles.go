@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/friendships"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/posts"
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/application/services/profiles"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
@@ -16,17 +17,19 @@ type ProfileRoutesConfig struct {
 	App            *fiber.App
 	UserRepo       users.Repository
 	FriendshipRepo friendships.Repository
+	PostsRepo      posts.Repository
 }
 
 const (
 	usernameParamName = "username"
 )
 
-func NewProfileRoutesConfigs(app *fiber.App, userRepo users.Repository, friendshipRepo friendships.Repository) *ProfileRoutesConfig {
+func NewProfileRoutesConfigs(app *fiber.App, userRepo users.Repository, friendshipRepo friendships.Repository, postRepo posts.Repository) *ProfileRoutesConfig {
 	return &ProfileRoutesConfig{
 		App:            app,
 		UserRepo:       userRepo,
 		FriendshipRepo: friendshipRepo,
+		PostsRepo:      postRepo,
 	}
 }
 
@@ -127,9 +130,39 @@ func unfollowUser(cfg *ProfileRoutesConfig) fiber.Handler {
 	})
 }
 
+func getPostsByUser(cfg *ProfileRoutesConfig) fiber.Handler {
+	return fiber.Handler(func(c *fiber.Ctx) error {
+		username := c.Params(usernameParamName)
+		s := profiles.NewGetPostsByUserService(cfg.UserRepo, cfg.PostsRepo)
+
+		request := profiles.GetPostsByUserRequest{
+			Username: username,
+		}
+		result, err := s.Perform(request)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
+				Message: err.Error(),
+			})
+		}
+
+		posts := []*presenters.Post{}
+		for _, post := range result.Posts {
+			posts = append(posts, &presenters.Post{
+				ID:        post.ID,
+				Username:  post.User.Username.String(),
+				Content:   post.Content,
+				CreatedAt: post.CreatedAt,
+			})
+		}
+
+		return c.JSON(posts)
+	})
+}
+
 func MountProfilesRoutes(cfg *ProfileRoutesConfig) {
 	g := cfg.App.Group("/profiles")
 	g.Get("/:username", getProfile(cfg))
 	g.Put("/:username/follow", followUser(cfg))
 	g.Delete("/:username/unfollow", unfollowUser(cfg))
+	g.Get("/:username/posts", getPostsByUser(cfg))
 }
