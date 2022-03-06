@@ -35,7 +35,7 @@ func TestInsertPost(t *testing.T) {
 	assert.Equal(t, 1, len(posts))
 }
 
-func TestGetPostsByUsername(t *testing.T) {
+func TestGetPostsByUserID(t *testing.T) {
 	r := posts_infra.NewMemoryRepository()
 	u := createUser(t, "myuser")
 	p := createPost(t, u, time.Now())
@@ -51,7 +51,7 @@ func TestGetPostsByUsername(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(posts))
 
-	posts, err = r.ListByUsername("myuser")
+	posts, err = r.ListByUserID(u.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(posts))
 }

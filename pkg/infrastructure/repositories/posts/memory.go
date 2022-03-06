@@ -31,11 +31,10 @@ func (r *MemoryRepository) List() ([]*posts.Post, error) {
 	return posts, nil
 }
 
-func (r *MemoryRepository) ListByUsername(username string) ([]*posts.Post, error) {
-	un := users.Username(username)
+func (r *MemoryRepository) ListByUserID(userID types.UUID) ([]*posts.Post, error) {
 	posts := make([]*posts.Post, 0, len(r.posts))
 	for _, post := range r.posts {
-		if post.User.Username == un {
+		if post.User.ID == userID {
 			posts = append(posts, post)
 		}
 	}
