@@ -30,9 +30,16 @@ func TestInsertPost(t *testing.T) {
 	err := r.Insert(p)
 	assert.NoError(t, err)
 
-	posts, err := r.List()
+	post, err := r.GetByID(p.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(posts))
+	assert.Equal(t, p, post)
+}
+
+func TestGetPostByID_not_found(t *testing.T) {
+	r := posts_infra.NewMemoryRepository()
+	post, err := r.GetByID(types.NewUUID())
+	assert.ErrorIs(t, err, posts.ErrNotFound)
+	assert.Nil(t, post)
 }
 
 func TestGetPostsByUserID(t *testing.T) {

@@ -23,6 +23,15 @@ func (r *MemoryRepository) Insert(post *posts.Post) error {
 	return nil
 }
 
+func (r *MemoryRepository) GetByID(id types.UUID) (*posts.Post, error) {
+	for _, post := range r.posts {
+		if post.ID == id {
+			return post, nil
+		}
+	}
+	return nil, posts.ErrNotFound
+}
+
 func (r *MemoryRepository) List() ([]*posts.Post, error) {
 	posts := make([]*posts.Post, 0, len(r.posts))
 	for _, post := range r.posts {
