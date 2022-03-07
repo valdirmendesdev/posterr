@@ -25,6 +25,7 @@ func TestNewPost(t *testing.T) {
 	assert.NotNil(t, p.ID)
 	assert.Equal(t, u, p.User)
 	assert.Equal(t, "content", p.Content)
+	assert.Equal(t, posts.TypePost, p.Type)
 	assert.Equal(t, now, p.CreatedAt)
 }
 
@@ -56,4 +57,53 @@ func TestNewPost_content_over_limit(t *testing.T) {
 	p, err := posts.NewPost(types.NewUUID(), u, content, time.Now())
 	assert.Nil(t, p)
 	assert.Equal(t, posts.ErrContentOverMaxLength, err)
+}
+
+func TestNewRepost(t *testing.T) {
+	u := createUser(t)
+	now := time.Now()
+	p, err := posts.NewPost(types.NewUUID(), u, "content", now)
+	assert.NoError(t, err)
+	r, err := posts.NewRepost(types.NewUUID(), u, p, now)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.NotNil(t, r.ID)
+	assert.Equal(t, u, r.User)
+	assert.Equal(t, "", r.Content)
+	assert.Equal(t, posts.TypeRepost, r.Type)
+	assert.Equal(t, now, r.CreatedAt)
+	assert.Equal(t, p, r.ReferencedPost)
+}
+
+func TestNewRepost_without_referenced_post(t *testing.T) {
+	u := createUser(t)
+	r, err := posts.NewRepost(types.NewUUID(), u, nil, time.Now())
+	assert.Nil(t, r)
+	assert.ErrorIs(t, posts.ErrInvalidReferencedPost, err)
+}
+
+func TestNewQuotePost(t *testing.T) {
+	u := createUser(t)
+	now := time.Now()
+	p, err := posts.NewPost(types.NewUUID(), u, "content", now)
+	assert.NoError(t, err)
+	r, err := posts.NewQuotePost(types.NewUUID(), u, p, "quote", now)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.NotNil(t, r.ID)
+	assert.Equal(t, u, r.User)
+	assert.Equal(t, "quote", r.Content)
+	assert.Equal(t, posts.TypeQuote, r.Type)
+	assert.Equal(t, now, r.CreatedAt)
+	assert.Equal(t, p, r.ReferencedPost)
+}
+
+func TestNewQuotePost_without_comment(t *testing.T) {
+	u := createUser(t)
+	now := time.Now()
+	p, err := posts.NewPost(types.NewUUID(), u, "content", now)
+	assert.NoError(t, err)
+	r, err := posts.NewQuotePost(types.NewUUID(), u, p, "", now)
+	assert.Nil(t, r)
+	assert.ErrorIs(t, posts.ErrInvalidContent, err)
 }
