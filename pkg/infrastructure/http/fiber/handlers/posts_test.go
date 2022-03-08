@@ -151,3 +151,22 @@ func TestRepost(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNoContent, response.StatusCode)
 }
+
+func createQuoteRequest(t *testing.T, id, content string) *http.Request {
+	bodyBytes, err := json.Marshal(presenters.CreatePost{
+		Content: content,
+	})
+	require.NoError(t, err)
+	request := httptest.NewRequest(http.MethodPut, "/posts/"+id+"/quote", bytes.NewReader(bodyBytes))
+	request.Header.Add("Content-Type", "application/json")
+	return request
+}
+
+func TestQuote(t *testing.T) {
+	rc := setupPostsRoutes()
+	p := createPost(t)
+	request := createQuoteRequest(t, p.ID.String(), "test")
+	response, err := rc.App.Test(request)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, response.StatusCode)
+}

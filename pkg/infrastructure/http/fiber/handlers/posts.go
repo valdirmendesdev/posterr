@@ -121,10 +121,37 @@ func repost(cfg *PostsRoutesConfig) fiber.Handler {
 	})
 }
 
+func quote(cfg *PostsRoutesConfig) fiber.Handler {
+	return fiber.Handler(func(c *fiber.Ctx) error {
+		postBody := new(presenters.CreatePost)
+
+		if err := c.BodyParser(postBody); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(&shared_presenters.Error{
+				Message: err.Error(),
+			})
+		}
+
+		s := posts.NewQuoteService(cfg.UsersRepo, cfg.PostsRepo)
+		lu := utils.GetLoggedUser()
+
+		_, err := s.Perform(posts.QuoteRequest{
+			PostID:   c.Params(postIDParam),
+			Username: lu.Username.String(),
+			Content:  postBody.Content,
+		})
+		if err != nil {
+			return c.SendStatus(http.StatusBadRequest)
+		}
+
+		return c.SendStatus(http.StatusNoContent)
+	})
+}
+
 func MountPostsRoutes(cfg *PostsRoutesConfig) {
 	g := cfg.App.Group("/posts")
 	g.Get("/", getPosts(cfg))
 	g.Post("/", createPost(cfg))
 	g.Get(fmt.Sprintf("/:%s", postIDParam), getPostID(cfg))
 	g.Put(fmt.Sprintf("/:%s/repost", postIDParam), repost(cfg))
+	g.Put(fmt.Sprintf("/:%s/quote", postIDParam), quote(cfg))
 }
