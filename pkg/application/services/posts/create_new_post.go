@@ -25,10 +25,7 @@ type CreateNewPostRequest struct {
 }
 
 type CreateNewPostResponse struct {
-	ID        types.UUID
-	Username  string
-	Content   string
-	CreatedAt time.Time
+	Post *posts.Post
 }
 
 func NewCreateNewPostService(postRepo posts.Repository) *CreateNewPostService {
@@ -57,9 +54,6 @@ func (s *CreateNewPostService) Perform(request CreateNewPostRequest) (*CreateNew
 		return nil, err
 	}
 	return &CreateNewPostResponse{
-		ID:        post.ID,
-		Username:  post.User.Username.String(),
-		Content:   post.Content,
-		CreatedAt: post.CreatedAt,
+		Post: post,
 	}, nil
 }

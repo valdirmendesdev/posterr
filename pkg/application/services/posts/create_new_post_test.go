@@ -22,10 +22,10 @@ func TestCreateNewPost(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.NotNil(t, response.ID)
-	assert.Equal(t, u.Username.String(), response.Username)
-	assert.Equal(t, "content", response.Content)
-	assert.NotNil(t, response.CreatedAt)
+	assert.NotNil(t, response.Post.ID)
+	assert.Equal(t, u.Username, response.Post.User.Username)
+	assert.Equal(t, "content", response.Post.Content)
+	assert.NotNil(t, response.Post.CreatedAt)
 }
 
 func generateString(length int) string {
