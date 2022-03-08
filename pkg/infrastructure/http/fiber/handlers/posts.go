@@ -42,12 +42,11 @@ func getPosts(cfg *PostsRoutesConfig) fiber.Handler {
 
 		posts := []presenters.Post{}
 		for _, post := range serviceResponse.Posts {
-			posts = append(posts, presenters.Post{
-				ID:        post.ID,
-				Username:  post.User.Username.String(),
-				Content:   post.Content,
-				CreatedAt: post.CreatedAt,
-			})
+			p, err := presenters.TransformPostToPresenter(post)
+			if err != nil {
+				return c.SendStatus(http.StatusInternalServerError)
+			}
+			posts = append(posts, p)
 		}
 
 		return c.JSON(posts)
@@ -76,12 +75,12 @@ func createPost(cfg *PostsRoutesConfig) fiber.Handler {
 			})
 		}
 
-		return c.Status(http.StatusCreated).JSON(presenters.Post{
-			ID:        serviceResponse.ID,
-			Username:  lu.Username.String(),
-			Content:   serviceResponse.Content,
-			CreatedAt: serviceResponse.CreatedAt,
-		})
+		p, err := presenters.TransformPostToPresenter(serviceResponse.Post)
+		if err != nil {
+			return c.SendStatus(http.StatusInternalServerError)
+		}
+
+		return c.Status(http.StatusCreated).JSON(p)
 	})
 }
 
@@ -96,12 +95,12 @@ func getPostID(cfg *PostsRoutesConfig) fiber.Handler {
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
-		return c.JSON(presenters.Post{
-			ID:        serviceResponse.Post.ID,
-			Username:  serviceResponse.Post.User.Username.String(),
-			Content:   serviceResponse.Post.Content,
-			CreatedAt: serviceResponse.Post.CreatedAt,
-		})
+		p, err := presenters.TransformPostToPresenter(serviceResponse.Post)
+		if err != nil {
+			return c.SendStatus(http.StatusInternalServerError)
+		}
+
+		return c.JSON(p)
 	})
 }
 
