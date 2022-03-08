@@ -17,6 +17,7 @@ import (
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/handlers"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
 	posts_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/posts"
+	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 	"github.com/valdirmendesdev/posterr/pkg/shared/utils"
 )
@@ -27,7 +28,8 @@ var (
 
 func setupPostsRoutes() *handlers.PostsRoutesConfig {
 	postsRepo = posts_infra.NewMemoryRepository()
-	config := handlers.NewPostsRoutesConfig(fiber.New(), postsRepo)
+	userRepo = users_infra.NewMemoryRepository()
+	config := handlers.NewPostsRoutesConfig(fiber.New(), userRepo, postsRepo)
 	handlers.MountPostsRoutes(config)
 	return config
 }
@@ -38,6 +40,8 @@ func createGetPostsRequest() *http.Request {
 
 func createPost(t *testing.T) *posts.Post {
 	u := utils.GetLoggedUser()
+	err := userRepo.Add(u)
+	assert.NoError(t, err)
 	post, err := posts.NewPost(types.NewUUID(), u, "my post", time.Now())
 	assert.NoError(t, err)
 	err = postsRepo.Insert(post)
@@ -133,4 +137,17 @@ func TestGetPostByID(t *testing.T) {
 	response, err := rc.App.Test(request)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
+}
+
+func createRepostRequest(id string) *http.Request {
+	return httptest.NewRequest(http.MethodPut, "/posts/"+id+"/repost", nil)
+}
+
+func TestRepost(t *testing.T) {
+	rc := setupPostsRoutes()
+	p := createPost(t)
+	request := createRepostRequest(p.ID.String())
+	response, err := rc.App.Test(request)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, response.StatusCode)
 }

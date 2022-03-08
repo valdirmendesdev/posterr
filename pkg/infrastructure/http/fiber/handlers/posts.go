@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	posts_domain "github.com/valdirmendesdev/posterr/pkg/application/domain/posts"
+	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/application/services/posts"
 	"github.com/valdirmendesdev/posterr/pkg/infrastructure/http/fiber/presenters"
 	shared_presenters "github.com/valdirmendesdev/posterr/pkg/shared/infrastructure/http/presenters"
@@ -14,6 +15,7 @@ import (
 
 type PostsRoutesConfig struct {
 	App       *fiber.App
+	UsersRepo users.Repository
 	PostsRepo posts_domain.Repository
 }
 
@@ -21,18 +23,12 @@ const (
 	postIDParam = "postID"
 )
 
-func NewPostsRoutesConfig(app *fiber.App, postsRepo posts_domain.Repository) *PostsRoutesConfig {
+func NewPostsRoutesConfig(app *fiber.App, userRepo users.Repository, postsRepo posts_domain.Repository) *PostsRoutesConfig {
 	return &PostsRoutesConfig{
 		App:       app,
 		PostsRepo: postsRepo,
+		UsersRepo: userRepo,
 	}
-}
-
-func MountPostsRoutes(cfg *PostsRoutesConfig) {
-	g := cfg.App.Group("/posts")
-	g.Get("/", getPosts(cfg))
-	g.Post("/", createPost(cfg))
-	g.Get(fmt.Sprintf("/:%s", postIDParam), getPostID(cfg))
 }
 
 func getPosts(cfg *PostsRoutesConfig) fiber.Handler {
@@ -107,4 +103,29 @@ func getPostID(cfg *PostsRoutesConfig) fiber.Handler {
 			CreatedAt: serviceResponse.Post.CreatedAt,
 		})
 	})
+}
+
+func repost(cfg *PostsRoutesConfig) fiber.Handler {
+	return fiber.Handler(func(c *fiber.Ctx) error {
+		s := posts.NewRepostService(cfg.UsersRepo, cfg.PostsRepo)
+		lu := utils.GetLoggedUser()
+
+		_, err := s.Perform(posts.RepostRequest{
+			PostID:   c.Params(postIDParam),
+			Username: lu.Username.String(),
+		})
+		if err != nil {
+			return c.SendStatus(http.StatusBadRequest)
+		}
+
+		return c.SendStatus(http.StatusNoContent)
+	})
+}
+
+func MountPostsRoutes(cfg *PostsRoutesConfig) {
+	g := cfg.App.Group("/posts")
+	g.Get("/", getPosts(cfg))
+	g.Post("/", createPost(cfg))
+	g.Get(fmt.Sprintf("/:%s", postIDParam), getPostID(cfg))
+	g.Put(fmt.Sprintf("/:%s/repost", postIDParam), repost(cfg))
 }

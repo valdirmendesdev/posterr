@@ -9,10 +9,12 @@ import (
 	"github.com/valdirmendesdev/posterr/pkg/application/domain/users"
 	"github.com/valdirmendesdev/posterr/pkg/application/services/posts"
 	posts_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/posts"
+	users_infra "github.com/valdirmendesdev/posterr/pkg/infrastructure/repositories/users"
 	"github.com/valdirmendesdev/posterr/pkg/shared/types"
 )
 
 var (
+	userRepo *users_infra.MemoryRepository
 	postRepo *posts_infra.MemoryRepository
 )
 
